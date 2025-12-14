@@ -148,7 +148,7 @@ y_train, y_test = y[:split], y[split:]
 # ------------------------------------------------------------
 # LOAD LSTM MODEL (NO TRAINING ON CLOUD)
 # ------------------------------------------------------------
-LSTM_MODEL_PATH = "lstm_model.h5"
+LSTM_MODEL_PATH = "lstm_model_fixed.keras"
 
 if not os.path.exists(LSTM_MODEL_PATH):
     st.error("LSTM model file not found. Please upload lstm_model.h5")
@@ -301,3 +301,4 @@ st.subheader("🔎 Forecast Confidence")
 st.progress(int(forecast_conf))
 
 st.write(f"Forecast Confidence: {forecast_conf:.2f}%")
+
