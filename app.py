@@ -7,11 +7,11 @@ import re
 import unicodedata
 import easyocr
 import os
+import tensorflow as tf
+import plotly.graph_objs as go
 
 from sklearn.preprocessing import MinMaxScaler
 from tensorflow.keras.preprocessing.sequence import pad_sequences
-import tensorflow as tf
-import plotly.graph_objs as go
 
 # ------------------------------------------------------------
 # PAGE CONFIG
@@ -36,13 +36,26 @@ def clean_text(text):
     return text
 
 # ------------------------------------------------------------
-# OCR (CACHED — IMPORTANT FOR STREAMLIT CLOUD)
+# OCR (CACHED)
 # ------------------------------------------------------------
 @st.cache_resource
 def load_ocr():
     return easyocr.Reader(['en'])
 
 reader = load_ocr()
+
+# ------------------------------------------------------------
+# BUILD LSTM ARCHITECTURE (IMPORTANT)
+# ------------------------------------------------------------
+def build_lstm_model(input_shape):
+    model = tf.keras.Sequential([
+        tf.keras.layers.LSTM(
+            64, return_sequences=True, input_shape=input_shape
+        ),
+        tf.keras.layers.LSTM(64),
+        tf.keras.layers.Dense(1)
+    ])
+    return model
 
 # ------------------------------------------------------------
 # SIDEBAR INPUT
@@ -144,19 +157,19 @@ X_train, X_test = X[:split], X[split:]
 y_train, y_test = y[:split], y[split:]
 
 # ------------------------------------------------------------
-# LOAD LSTM MODEL (NO TRAINING ON CLOUD)
+# LOAD LSTM WEIGHTS (FINAL FIX)
 # ------------------------------------------------------------
-LSTM_MODEL_PATH = "lstm_model_tf.keras"
+WEIGHTS_PATH = "lstm_weights.weights.h5"
 
-if not os.path.exists(LSTM_MODEL_PATH):
-    st.error("LSTM model file not found. Please upload lstm_model.h5")
+if not os.path.exists(WEIGHTS_PATH):
+    st.error("LSTM weights file not found. Upload lstm_weights.weights.h5")
     st.stop()
 
-lstm_model = tf.keras.models.load_model(
-    LSTM_MODEL_PATH,
-    compile=False,
-    safe_mode=False
+lstm_model = build_lstm_model(
+    input_shape=(X_train.shape[1], X_train.shape[2])
 )
+
+lstm_model.load_weights(WEIGHTS_PATH)
 
 # ------------------------------------------------------------
 # LSTM PREDICTION
@@ -176,16 +189,8 @@ actual = close_scaler.inverse_transform(y_test.reshape(-1, 1))
 st.subheader("📈 Actual vs Predicted Close Price")
 
 fig = go.Figure()
-fig.add_trace(go.Scatter(
-    y=actual.flatten(),
-    mode="lines",
-    name="Actual"
-))
-fig.add_trace(go.Scatter(
-    y=predictions.flatten(),
-    mode="lines",
-    name="Predicted"
-))
+fig.add_trace(go.Scatter(y=actual.flatten(), mode="lines", name="Actual"))
+fig.add_trace(go.Scatter(y=predictions.flatten(), mode="lines", name="Predicted"))
 
 fig.update_layout(height=500)
 st.plotly_chart(fig, use_container_width=True)
@@ -193,16 +198,9 @@ st.plotly_chart(fig, use_container_width=True)
 # ------------------------------------------------------------
 # LOAD SENTIMENT MODEL
 # ------------------------------------------------------------
-SENTIMENT_MODEL_PATH = "sentiment_model.h5"
-
-if not os.path.exists(SENTIMENT_MODEL_PATH):
-    st.error("Sentiment model file not found.")
-    st.stop()
-
 sentiment_model = tf.keras.models.load_model(
-    SENTIMENT_MODEL_PATH,
-    compile=False,
-    safe_mode=False
+    "sentiment_model.h5",
+    compile=False
 )
 
 with open("tokenizer.pkl", "rb") as f:
@@ -237,12 +235,11 @@ if sentiment_ready:
         unsafe_allow_html=True
     )
     st.write(f"Sentiment Score: {score:.2f}%")
-
 else:
     st.warning("Enter text or upload an image for sentiment analysis.")
 
 # ------------------------------------------------------------
-# HYBRID TRADING SIGNAL
+# HYBRID SIGNAL
 # ------------------------------------------------------------
 st.subheader("📌 Hybrid Trading Signal")
 
@@ -265,7 +262,7 @@ st.markdown(
 )
 
 # ------------------------------------------------------------
-# MODEL CONFIDENCE
+# CONFIDENCE SCORE
 # ------------------------------------------------------------
 errors = np.abs(predictions - actual) / actual
 confidence = max(0, min((1 - np.mean(errors)) * 100, 100))
@@ -275,7 +272,7 @@ st.progress(int(confidence))
 st.write(f"Confidence: {confidence:.2f}%")
 
 # ------------------------------------------------------------
-# 7-DAY FUTURE FORECAST
+# 7-DAY FORECAST
 # ------------------------------------------------------------
 st.subheader("🔮 7-Day Forecast")
 
@@ -293,19 +290,14 @@ for _ in range(7):
 
     new_row = last_seq[-1].copy()
     new_row[3] = pred_scaled[0][0]
-
     last_seq = np.vstack([last_seq[1:], new_row])
 
 st.line_chart(future)
 
-# Forecast confidence
 vol = np.std(future)
 mean = np.mean(future)
 forecast_conf = max(0, min((1 - (vol / mean)) * 100, 100))
 
 st.subheader("🔎 Forecast Confidence")
 st.progress(int(forecast_conf))
-
 st.write(f"Forecast Confidence: {forecast_conf:.2f}%")
-
-
