@@ -1,0 +1,10 @@
+streamlit
+numpy
+pandas
+yfinance
+scikit-learn
+tensorflow
+easyocr
+opencv-python-headless
+plotly
+pillow
