@@ -154,7 +154,7 @@ if not os.path.exists(LSTM_MODEL_PATH):
     st.error("LSTM model file not found. Please upload lstm_model.h5")
     st.stop()
 
-lstm_model = load_model(LSTM_MODEL_PATH)
+lstm_model = load_model(LSTM_MODEL_PATH, compile=False)
 
 # ------------------------------------------------------------
 # LSTM PREDICTION
@@ -197,7 +197,7 @@ if not os.path.exists(SENTIMENT_MODEL_PATH):
     st.error("Sentiment model file not found.")
     st.stop()
 
-sentiment_model = load_model(SENTIMENT_MODEL_PATH)
+sentiment_model = load_model(SENTIMENT_MODEL_PATH, compile=False)
 
 with open("tokenizer.pkl", "rb") as f:
     tokenizer = pickle.load(f)
@@ -299,4 +299,5 @@ forecast_conf = max(0, min((1 - (vol / mean)) * 100, 100))
 
 st.subheader("🔎 Forecast Confidence")
 st.progress(int(forecast_conf))
+
 st.write(f"Forecast Confidence: {forecast_conf:.2f}%")
