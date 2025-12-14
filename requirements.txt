@@ -3,7 +3,8 @@ numpy
 pandas
 yfinance
 scikit-learn
-tensorflow
+tensorflow==2.15.0
+keras==2.15.0
 easyocr
 opencv-python-headless
 plotly
