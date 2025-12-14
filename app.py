@@ -13,15 +13,13 @@ from tensorflow.keras.preprocessing.text import tokenizer_from_json
 from sklearn.preprocessing import MinMaxScaler
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 
-# ------------------------------------------------------------
 # PAGE CONFIG
-# ------------------------------------------------------------
-st.set_page_config(page_title="Hybrid Stock Prediction Dashboard", layout="wide")
-st.title("Hybrid Stock Prediction Dashboard (LSTM + ANN + OCR)")
 
-# ------------------------------------------------------------
+st.set_page_config(page_title="Hybrid Stock Prediction Dashboard", layout="wide")
+st.title("Hybrid Stock Prediction Dashboard")
+
 # CLEAN TEXT
-# ------------------------------------------------------------
+
 def clean_text(text):
     text = unicodedata.normalize("NFKD", text)
     text = text.lower()
@@ -30,18 +28,16 @@ def clean_text(text):
     text = re.sub(r"\b[a-zA-Z]\b", "", text)
     return text
 
-# ------------------------------------------------------------
+
 # OCR (CACHED)
-# ------------------------------------------------------------
 @st.cache_resource
 def load_ocr():
     return easyocr.Reader(['en'])
 
 reader = load_ocr()
 
-# ------------------------------------------------------------
 # MODEL BUILDERS
-# ------------------------------------------------------------
+
 def build_lstm_model(input_shape):
     return tf.keras.Sequential([
         tf.keras.layers.LSTM(64, return_sequences=True, input_shape=input_shape),
@@ -61,15 +57,15 @@ def build_sentiment_model(vocab_size, max_len):
         tf.keras.layers.Dense(1, activation="sigmoid")
     ])
 
-# ------------------------------------------------------------
+
 # SIDEBAR INPUTS
-# ------------------------------------------------------------
-st.sidebar.header("📌 Stock & Date Selection")
+
+st.sidebar.header("📌 Stock Data")
 ticker = st.sidebar.text_input("Enter Stock Ticker", "AAPL")
 start_date = st.sidebar.date_input("Start Date", pd.to_datetime("2015-01-01"))
 end_date = st.sidebar.date_input("End Date", pd.to_datetime("2025-01-01"))
 
-st.sidebar.header("📰 Sentiment Analysis (ANN)")
+st.sidebar.header("📰 Sentiment Analysis")
 if "news_text" not in st.session_state:
     st.session_state["news_text"] = ""
 
@@ -82,9 +78,8 @@ if uploaded_image:
 news_input = st.sidebar.text_area("Enter News Text:", key="news_text")
 sentiment_ready = news_input.strip() != ""
 
-# ------------------------------------------------------------
 # LOAD STOCK DATA
-# ------------------------------------------------------------
+
 df = yf.download(ticker, start=start_date, end=end_date)
 if df.empty:
     st.error("No stock data found.")
@@ -93,9 +88,8 @@ if df.empty:
 st.subheader("📊 Historical Stock Data")
 st.dataframe(df.tail(50))
 
-# ------------------------------------------------------------
 # TECHNICAL INDICATORS
-# ------------------------------------------------------------
+
 df["MA20"] = df["Close"].rolling(20).mean()
 delta = df["Close"].diff()
 gain = delta.where(delta > 0, 0)
@@ -109,9 +103,8 @@ df["MACD"] = EMA12 - EMA26
 df["Signal"] = df["MACD"].ewm(span=9).mean()
 df.dropna(inplace=True)
 
-# ------------------------------------------------------------
 # LSTM DATA PREP
-# ------------------------------------------------------------
+
 features = df[['Open','High','Low','Close','Volume','MA20','RSI','MACD','Signal']]
 scaler = MinMaxScaler()
 scaled = scaler.fit_transform(features)
@@ -127,9 +120,8 @@ split = int(len(X)*0.8)
 X_train, X_test = X[:split], X[split:]
 y_test = y[split:]
 
-# ------------------------------------------------------------
 # LOAD LSTM WEIGHTS
-# ------------------------------------------------------------
+
 if not os.path.exists("lstm_weights.weights.h5"):
     st.error("Missing lstm_weights.weights.h5")
     st.stop()
@@ -137,9 +129,8 @@ if not os.path.exists("lstm_weights.weights.h5"):
 lstm_model = build_lstm_model((X_train.shape[1], X_train.shape[2]))
 lstm_model.load_weights("lstm_weights.weights.h5")
 
-# ------------------------------------------------------------
 # LSTM PREDICTION
-# ------------------------------------------------------------
+
 pred_scaled = lstm_model.predict(X_test, verbose=0)
 
 close_scaler = MinMaxScaler()
@@ -153,9 +144,8 @@ fig.add_trace(go.Scatter(y=actual.flatten(), name="Actual"))
 fig.add_trace(go.Scatter(y=predictions.flatten(), name="Predicted"))
 st.plotly_chart(fig, use_container_width=True)
 
-# ------------------------------------------------------------
 # LOAD SENTIMENT MODEL (WEIGHTS ONLY)
-# ------------------------------------------------------------
+
 with open("config.pkl","rb") as f:
     config = pickle.load(f)
 
@@ -169,9 +159,8 @@ if not os.path.exists("sentiment_weights.weights.h5"):
 sentiment_model = build_sentiment_model(config["vocab_size"], config["max_len"])
 sentiment_model.load_weights("sentiment_weights.weights.h5")
 
-# ------------------------------------------------------------
 # SENTIMENT ANALYSIS
-# ------------------------------------------------------------
+
 st.subheader("🧠 Sentiment Analysis Result")
 
 prob = 0.5  # default neutral
@@ -179,6 +168,7 @@ if sentiment_ready:
     seq = tokenizer.texts_to_sequences([news_input])
     padded = pad_sequences(seq, maxlen=config["max_len"], padding="post")
     prob = sentiment_model.predict(padded, verbose=0)[0][0]
+    score = prob * 100
 
     if prob > 0.6:
         label, color = "Positive 😊", "green"
@@ -188,20 +178,32 @@ if sentiment_ready:
         label, color = "Neutral 😐", "orange"
 
     st.markdown(f"<h3 style='color:{color}'>{label}</h3>", unsafe_allow_html=True)
+    st.write(f"Sentiment Score: {score:.2f}%")
 
-# ------------------------------------------------------------
 # HYBRID SIGNAL
-# ------------------------------------------------------------
+
 price_change = (predictions[-1][0] - actual[-1][0]) / actual[-1][0] * 100
 combined = 0.7 * price_change + 0.3 * prob
+if combined > 0.2:
+    signal, sig_color = "BUY", "green"
+elif combined < -0.2:
+    signal, sig_color = "SELL", "red"
+else:
+    signal, sig_color = "HOLD", "orange"
 
-signal = "BUY" if combined > 0.2 else "SELL" if combined < -0.2 else "HOLD"
 st.subheader("📌 Hybrid Trading Signal")
-st.markdown(f"<h2 style='text-align:center'>{signal}</h2>", unsafe_allow_html=True)
+st.markdown(f"<h2 style='color:{sig_color}; text-align:center'>{signal}</h2>", unsafe_allow_html=True)
 
-# ------------------------------------------------------------
+# CONFIDENCE SCORE
+
+errors = np.abs(predictions - actual) / actual
+confidence = max(0, min((1 - np.mean(errors)) * 100, 100))
+
+st.subheader("🎯 Model Confidence Score")
+st.progress(int(confidence))
+st.write(f"Confidence: {confidence:.2f}%")
+
 # 7-DAY FORECAST
-# ------------------------------------------------------------
 st.subheader("🔮 7-Day Forecast")
 
 future = []
@@ -229,4 +231,3 @@ forecast_conf = max(0, min((1 - (vol / mean)) * 100, 100))
 st.subheader("🔎 Forecast Confidence")
 st.progress(int(forecast_conf))
 st.write(f"Forecast Confidence: {forecast_conf:.2f}%")
-
