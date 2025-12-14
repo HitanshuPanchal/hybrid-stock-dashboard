@@ -9,7 +9,7 @@ import easyocr
 import os
 import tensorflow as tf
 import plotly.graph_objs as go
-
+from tensorflow.keras.preprocessing.text import tokenizer_from_json
 from sklearn.preprocessing import MinMaxScaler
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 
@@ -159,8 +159,8 @@ st.plotly_chart(fig, use_container_width=True)
 with open("config.pkl","rb") as f:
     config = pickle.load(f)
 
-with open("tokenizer.pkl","rb") as f:
-    tokenizer = pickle.load(f)
+with open("tokenizer.json", "r") as f:
+    tokenizer = tokenizer_from_json(f.read())
 
 if not os.path.exists("sentiment_weights.weights.h5"):
     st.error("Missing sentiment_weights.weights.h5")
@@ -229,3 +229,4 @@ forecast_conf = max(0, min((1 - (vol / mean)) * 100, 100))
 st.subheader("🔎 Forecast Confidence")
 st.progress(int(forecast_conf))
 st.write(f"Forecast Confidence: {forecast_conf:.2f}%")
+
