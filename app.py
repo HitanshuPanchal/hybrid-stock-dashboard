@@ -9,10 +9,8 @@ import easyocr
 import os
 
 from sklearn.preprocessing import MinMaxScaler
-from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.sequence import pad_sequences
-from tensorflow.keras.layers import LSTM, Dense
-from tensorflow.keras.models import Sequential
+import tensorflow as tf
 import plotly.graph_objs as go
 
 # ------------------------------------------------------------
@@ -148,13 +146,17 @@ y_train, y_test = y[:split], y[split:]
 # ------------------------------------------------------------
 # LOAD LSTM MODEL (NO TRAINING ON CLOUD)
 # ------------------------------------------------------------
-LSTM_MODEL_PATH = "lstm_model_fixed.keras"
+LSTM_MODEL_PATH = "lstm_model_tf.keras"
 
 if not os.path.exists(LSTM_MODEL_PATH):
     st.error("LSTM model file not found. Please upload lstm_model.h5")
     st.stop()
 
-lstm_model = load_model(LSTM_MODEL_PATH, compile=False)
+lstm_model = tf.keras.models.load_model(
+    LSTM_MODEL_PATH,
+    compile=False,
+    safe_mode=False
+)
 
 # ------------------------------------------------------------
 # LSTM PREDICTION
@@ -197,7 +199,11 @@ if not os.path.exists(SENTIMENT_MODEL_PATH):
     st.error("Sentiment model file not found.")
     st.stop()
 
-sentiment_model = load_model(SENTIMENT_MODEL_PATH, compile=False)
+sentiment_model = tf.keras.models.load_model(
+    SENTIMENT_MODEL_PATH,
+    compile=False,
+    safe_mode=False
+)
 
 with open("tokenizer.pkl", "rb") as f:
     tokenizer = pickle.load(f)
@@ -301,4 +307,5 @@ st.subheader("🔎 Forecast Confidence")
 st.progress(int(forecast_conf))
 
 st.write(f"Forecast Confidence: {forecast_conf:.2f}%")
+
 
