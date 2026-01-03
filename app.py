@@ -61,9 +61,12 @@ def build_sentiment_model(vocab_size, max_len):
 # SIDEBAR INPUTS
 
 st.sidebar.header("📌 Stock Data")
-ticker = st.sidebar.text_input("Enter Stock Ticker", "AAPL")
+ticker = st.sidebar.text_input("Enter Stock Ticker", "RELIANCE.NS")
 start_date = st.sidebar.date_input("Start Date", pd.to_datetime("2015-01-01"))
-end_date = st.sidebar.date_input("End Date", pd.to_datetime("2025-01-01"))
+end_date = st.sidebar.date_input(
+    "End Date",
+    pd.to_datetime("today") - pd.Timedelta(days=1)
+)
 
 st.sidebar.header("📰 Sentiment Analysis")
 if "news_text" not in st.session_state:
@@ -235,4 +238,5 @@ forecast_conf = max(0, min((1 - (vol / mean)) * 100, 100))
 st.subheader("🔎 Forecast Confidence")
 st.progress(int(forecast_conf))
 st.write(f"Forecast Confidence: {forecast_conf:.2f}%")
+
 
