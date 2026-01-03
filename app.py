@@ -170,6 +170,8 @@ sentiment_model.load_weights("sentiment_weights.weights.h5")
 # SENTIMENT ANALYSIS
 
 st.subheader("Sentiment Analysis Result")
+if not sentiment_ready:
+    st.caption("Add news text or upload a news image to enable sentiment analysis.")
 
 prob = 0.5  # default neutral
 if sentiment_ready:
@@ -242,3 +244,4 @@ with col2:
 st.caption(
     "RMSE measures average price error. R² indicates how well the model explains price variance."
 )
+
