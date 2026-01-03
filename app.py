@@ -81,12 +81,16 @@ sentiment_ready = news_input.strip() != ""
 # LOAD STOCK DATA
 
 df = yf.download(ticker, start=start_date, end=end_date)
+
 if df.empty:
     st.error("No stock data found.")
     st.stop()
 
-st.subheader("📊 Historical Stock Data")
-st.dataframe(df.tail(50))
+# Sort by Date index in descending order
+df_desc = df.sort_index(ascending=False)
+
+st.subheader("Historical Stock Data")
+st.dataframe(df_desc.head(30))
 
 # TECHNICAL INDICATORS
 
@@ -231,3 +235,4 @@ forecast_conf = max(0, min((1 - (vol / mean)) * 100, 100))
 st.subheader("🔎 Forecast Confidence")
 st.progress(int(forecast_conf))
 st.write(f"Forecast Confidence: {forecast_conf:.2f}%")
+
