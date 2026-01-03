@@ -12,6 +12,7 @@ import plotly.graph_objs as go
 from tensorflow.keras.preprocessing.text import tokenizer_from_json
 from sklearn.preprocessing import MinMaxScaler
 from tensorflow.keras.preprocessing.sequence import pad_sequences
+from sklearn.metrics import mean_squared_error, r2_score
 
 # PAGE CONFIG
 
@@ -201,14 +202,25 @@ else:
 st.subheader("📌 Hybrid Trading Signal")
 st.markdown(f"<h2 style='color:{sig_color}; text-align:center'>{signal}</h2>", unsafe_allow_html=True)
 
-# CONFIDENCE SCORE
+# MODEL PERFORMANCE METRICS
 
-errors = np.abs(predictions - actual) / actual
-confidence = max(0, min((1 - np.mean(errors)) * 100, 100))
+rmse = np.sqrt(mean_squared_error(actual, predictions))
+r2 = r2_score(actual, predictions)
 
-st.subheader("🎯 Model Confidence Score")
-st.progress(int(confidence))
-st.write(f"Confidence: {confidence:.2f}%")
+st.subheader("📊 Model Performance Metrics")
+
+col1, col2 = st.columns(2)
+
+with col1:
+    st.metric(label="RMSE", value=f"{rmse:.2f}")
+
+with col2:
+    st.metric(label="R² Score", value=f"{r2:.4f}")
+
+st.caption(
+    "RMSE measures average price error. R² indicates how well the model explains price variance."
+)
+
 
 # 7-DAY FORECAST
 st.subheader("🔮 7-Day Forecast")
@@ -238,5 +250,6 @@ forecast_conf = max(0, min((1 - (vol / mean)) * 100, 100))
 st.subheader("🔎 Forecast Confidence")
 st.progress(int(forecast_conf))
 st.write(f"Forecast Confidence: {forecast_conf:.2f}%")
+
 
 
