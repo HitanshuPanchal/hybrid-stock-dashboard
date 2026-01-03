@@ -146,7 +146,7 @@ close_scaler.min_, close_scaler.scale_ = scaler.min_[3:4], scaler.scale_[3:4]
 predictions = close_scaler.inverse_transform(pred_scaled)
 actual = close_scaler.inverse_transform(y_test.reshape(-1,1))
 
-st.subheader("📈 Actual vs Predicted")
+st.subheader("Actual vs Predicted")
 fig = go.Figure()
 fig.add_trace(go.Scatter(y=actual.flatten(), name="Actual"))
 fig.add_trace(go.Scatter(y=predictions.flatten(), name="Predicted"))
@@ -169,7 +169,7 @@ sentiment_model.load_weights("sentiment_weights.weights.h5")
 
 # SENTIMENT ANALYSIS
 
-st.subheader("🧠 Sentiment Analysis Result")
+st.subheader("Sentiment Analysis Result")
 
 prob = 0.5  # default neutral
 if sentiment_ready:
@@ -202,28 +202,8 @@ else:
 st.subheader("📌 Hybrid Trading Signal")
 st.markdown(f"<h2 style='color:{sig_color}; text-align:center'>{signal}</h2>", unsafe_allow_html=True)
 
-# MODEL PERFORMANCE METRICS
-
-rmse = np.sqrt(mean_squared_error(actual, predictions))
-r2 = r2_score(actual, predictions)
-
-st.subheader("📊 Model Performance Metrics")
-
-col1, col2 = st.columns(2)
-
-with col1:
-    st.metric(label="RMSE", value=f"{rmse:.2f}")
-
-with col2:
-    st.metric(label="R² Score", value=f"{r2:.4f}")
-
-st.caption(
-    "RMSE measures average price error. R² indicates how well the model explains price variance."
-)
-
-
 # 7-DAY FORECAST
-st.subheader("🔮 7-Day Forecast")
+st.subheader("7-Day Forecast")
 
 future = []
 last_seq = scaled[-SEQ_LEN:].copy()
@@ -243,13 +223,22 @@ for _ in range(7):
 
 st.line_chart(future)
 
-vol = np.std(future)
-mean = np.mean(future)
-forecast_conf = max(0, min((1 - (vol / mean)) * 100, 100))
 
-st.subheader("🔎 Forecast Confidence")
-st.progress(int(forecast_conf))
-st.write(f"Forecast Confidence: {forecast_conf:.2f}%")
+# MODEL PERFORMANCE METRICS
 
+rmse = np.sqrt(mean_squared_error(actual, predictions))
+r2 = r2_score(actual, predictions)
 
+st.subheader("Model Performance Metrics")
 
+col1, col2 = st.columns(2)
+
+with col1:
+    st.metric(label="RMSE", value=f"{rmse:.2f}")
+
+with col2:
+    st.metric(label="R² Score", value=f"{r2:.4f}")
+
+st.caption(
+    "RMSE measures average price error. R² indicates how well the model explains price variance."
+)
