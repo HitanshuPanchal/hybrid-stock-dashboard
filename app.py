@@ -62,7 +62,14 @@ def build_sentiment_model(vocab_size, max_len):
 # SIDEBAR INPUTS
 
 st.sidebar.header("📌 Stock Data")
-ticker = st.sidebar.text_input("Enter Stock Ticker", "RELIANCE.NS")
+stock_name = st.sidebar.text_input("Enter Stock Name", "RELIANCE")
+ticker = stock_name.upper().strip() + ".NS"
+try:
+    stock_info = yf.Ticker(ticker).info
+    full_name = stock_info.get("longName", stock_name.upper())
+except:
+    full_name = stock_name.upper()
+    
 start_date = st.sidebar.date_input("Start Date", pd.to_datetime("2015-01-01"))
 end_date = st.sidebar.date_input(
     "End Date",
@@ -93,7 +100,9 @@ if df.empty:
 # Sort by Date index in descending order
 df_desc = df.sort_index(ascending=False)
 
-st.subheader("Historical Stock Data")
+
+
+st.subheader(f"Historical Stock Data — {full_name}")
 st.dataframe(df_desc.head(30))
 
 # TECHNICAL INDICATORS
@@ -264,4 +273,5 @@ st.markdown("---")
 st.info(
     "⚠️**Disclaimer:** This project is developed for academic purposes only, stock market prices are highly volatile and influenced by external factors. Predictions should not be used for real-world trading or investment decisions."
 )
+
 
