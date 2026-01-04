@@ -256,10 +256,12 @@ with col1:
 
 with col2:
     st.metric(label="R² Score", value=f"{r2:.4f}")
+st.caption(
+    "RMSE measures average price error in ₹. R² indicates how well the model explains price variance."
+)
 
 st.markdown("---")
 st.info(
-    "⚠️**Disclaimer:** This project is developed for academic purposes only. "
-    "Stock market prices are highly volatile and influenced by external factors. "
-    "Predictions should not be used for real-world trading or investment decisions."
+    "⚠️**Disclaimer:** This project is developed for academic purposes only, stock market prices are highly volatile and influenced by external factors. Predictions should not be used for real-world trading or investment decisions."
 )
+
