@@ -152,6 +152,22 @@ fig.add_trace(go.Scatter(y=actual.flatten(), name="Actual"))
 fig.add_trace(go.Scatter(y=predictions.flatten(), name="Predicted"))
 st.plotly_chart(fig, use_container_width=True)
 
+#Last Close vs Next-Day Prediction
+last_close = actual[-1][0]
+next_day_pred = predictions[-1][0]
+
+col1, col2 = st.columns(2)
+
+with col1:
+    st.metric("Last Close Price (₹)", f"{last_close:.2f}")
+
+with col2:
+    st.metric(
+        "Next-Day Predicted Price (₹)",
+        f"{next_day_pred:.2f}",
+        delta=f"{next_day_pred - last_close:.2f}"
+    )
+
 # LOAD SENTIMENT MODEL (WEIGHTS ONLY)
 
 with open("config.pkl","rb") as f:
@@ -201,7 +217,7 @@ elif combined < -0.2:
 else:
     signal, sig_color = "HOLD", "orange"
 
-st.subheader("📌 Hybrid Trading Signal")
+st.subheader("Hybrid Trading Signal")
 st.markdown(f"<h2 style='color:{sig_color}; text-align:center'>{signal}</h2>", unsafe_allow_html=True)
 
 # 7-DAY FORECAST
@@ -238,7 +254,7 @@ forecast_df = pd.DataFrame({
     "Predicted Price (₹)": np.round(future, 2)
 })
 
-st.subheader("📋 7-Day Price Forecast Table")
+st.subheader("7-Day Price Forecast Table")
 st.dataframe(forecast_df, use_container_width=True)
 
 # MODEL PERFORMANCE METRICS
@@ -256,8 +272,23 @@ with col1:
 with col2:
     st.metric(label="R² Score", value=f"{r2:.4f}")
 
+#Directional Accuracy
+
+direction_acc = np.mean(
+    np.sign(np.diff(actual.flatten())) ==
+    np.sign(np.diff(predictions.flatten()))
+) * 100
+
+st.metric("Directional Accuracy (%)", f"{direction_acc:.2f}")
+
+
 st.caption(
-    "RMSE measures average price error. R² indicates how well the model explains price variance."
+    "RMSE measures average price error in ₹. R² indicates how well the model explains price variance."
 )
 
-
+st.markdown("---")
+st.info(
+    "⚠️ **Disclaimer:** This project is developed for academic purposes only. "
+    "Stock market prices are highly volatile and influenced by external factors. "
+    "Predictions should not be used for real-world trading or investment decisions."
+)
