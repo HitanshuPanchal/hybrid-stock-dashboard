@@ -223,8 +223,23 @@ for _ in range(7):
     new_row[3] = pred_scaled[0][0]
     last_seq = np.vstack([last_seq[1:], new_row])
 
+# Plot forecast
 st.line_chart(future)
 
+# Create forecast table
+forecast_dates = pd.date_range(
+    start=df.index[-1] + pd.Timedelta(days=1),
+    periods=7,
+    freq="B"   # Business days (skips weekends)
+)
+
+forecast_df = pd.DataFrame({
+    "Date": forecast_dates.date,
+    "Predicted Price (₹)": np.round(future, 2)
+})
+
+st.subheader("📋 7-Day Price Forecast Table")
+st.dataframe(forecast_df, use_container_width=True)
 
 # MODEL PERFORMANCE METRICS
 
@@ -244,4 +259,5 @@ with col2:
 st.caption(
     "RMSE measures average price error. R² indicates how well the model explains price variance."
 )
+
 
