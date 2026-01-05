@@ -64,10 +64,22 @@ def build_sentiment_model(vocab_size, max_len):
 st.sidebar.header("📌 Stock Data")
 stock_name = st.sidebar.text_input("Enter Stock Name", "RELIANCE")
 ticker = stock_name.upper().strip() + ".NS"
+
+#Full Stock Name
 try:
-    stock_info = yf.Ticker(ticker).info
-    full_name = stock_info.get("longName", stock_name.upper())
-except:
+    t = yf.Ticker(ticker)
+
+    if hasattr(t, "fast_info") and t.fast_info:
+        full_name = t.fast_info.get("longName")
+
+    if not full_name:
+        info = t.info
+        full_name = info.get("longName")
+
+    if not full_name:
+        full_name = stock_name.upper()
+
+except Exception:
     full_name = stock_name.upper()
     
 start_date = st.sidebar.date_input("Start Date", pd.to_datetime("2015-01-01"))
@@ -291,6 +303,7 @@ st.markdown("---")
 st.info(
     "⚠️**Disclaimer:** This project is developed for academic purposes only, stock market prices are highly volatile and influenced by external factors. Predictions should not be used for real-world trading or investment decisions."
 )
+
 
 
 
