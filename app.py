@@ -155,12 +155,30 @@ close_scaler.min_, close_scaler.scale_ = scaler.min_[3:4], scaler.scale_[3:4]
 predictions = close_scaler.inverse_transform(pred_scaled)
 actual = close_scaler.inverse_transform(y_test.reshape(-1,1))
 
+# PLOT ACTUAL VS PREDICTED
 st.subheader("Actual vs Predicted")
-fig = go.Figure()
-fig.add_trace(go.Scatter(y=actual.flatten(), name="Actual"))
-fig.add_trace(go.Scatter(y=predictions.flatten(), name="Predicted"))
-st.plotly_chart(fig, use_container_width=True)
 
+test_dates = df.index[SEQ_LEN + split:]  # dates aligned with X_test
+
+fig = go.Figure()
+fig.add_trace(go.Scatter(
+    x=test_dates,
+    y=actual.flatten(),
+    name="Actual"
+))
+fig.add_trace(go.Scatter(
+    x=test_dates,
+    y=predictions.flatten(),
+    name="Predicted"
+))
+
+fig.update_layout(
+    xaxis_title="Date",
+    yaxis_title="Price (₹)",
+    hovermode="x unified"
+)
+
+st.plotly_chart(fig, width='stretch')
 
 # LOAD SENTIMENT MODEL (WEIGHTS ONLY)
 
@@ -273,5 +291,6 @@ st.markdown("---")
 st.info(
     "⚠️**Disclaimer:** This project is developed for academic purposes only, stock market prices are highly volatile and influenced by external factors. Predictions should not be used for real-world trading or investment decisions."
 )
+
 
 
